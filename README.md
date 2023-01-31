@@ -10,13 +10,13 @@ tensorflow 2.8.0
 ```
 Pytorch 1.11.0+cu113
 ```
-###(Optional)
+### (Optional)
 ```
 torch2trt
 ```
 
 ## Referenced file
-**contained in reference directory**
+** contained in reference directory **
 
 ## Documentation
 **contained in documentation directory written in traditional chinese**
