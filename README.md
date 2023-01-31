@@ -2,16 +2,17 @@
 >An inproved model from reference work "DeepLOB: Deep Convolutional Neural Networks for Limit Order Books" 
 
 ### How to use it ?
-```
-not updated
-```
+<sub>
+
+</sub>
+
 
 ### Referenced file
-```
+<sub>
 contained in reference directory
-```
+</sub>
 
 ### Documentation
-```
+<sub>
 contained in documentation directory written in traditional chinese
-```
+</sub>
