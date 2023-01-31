@@ -16,11 +16,7 @@ torch2trt
 ```
 
 ## Referenced file
-**
-contained in reference directory
-**
+**contained in reference directory**
 
 ## Documentation
-**
-contained in documentation directory written in traditional chinese
-**
+**contained in documentation directory written in traditional chinese**
