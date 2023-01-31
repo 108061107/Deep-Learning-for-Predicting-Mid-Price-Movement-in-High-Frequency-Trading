@@ -3,12 +3,16 @@
 
 ## How to use it ?
 ### Prerequisite
-'''
+```
 tensorflow 2.8.0
-'''
-'''
+```
+```
 Pytorch 1.11.0+cu113
-'''
+```
+(Optional)
+```
+torch2trt
+```
 
 ## Referenced file
 **
