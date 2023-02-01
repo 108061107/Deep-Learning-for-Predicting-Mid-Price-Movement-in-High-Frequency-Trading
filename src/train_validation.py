@@ -284,7 +284,7 @@ class TemporalConvNet(nn.Module):
         return self.network(x)
 
 
-# # main block
+## main block
 
 
 
@@ -322,7 +322,6 @@ class deeplob(nn.Module):
         
         self.tcn = TemporalConvNet(num_inputs=32, num_channels=[32, 32], kernel_size=4, dropout=0.2)
         
-        # fully connected
         self.fc1 = nn.Linear(32, num_classes)
 
     
