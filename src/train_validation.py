@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[25]:
 
 
 # load packages
@@ -25,41 +24,37 @@ from torch.nn.utils import weight_norm
 # from torch2trt import torch2trt
 
 
-# In[3]:
-
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
 
-# In[4]:
-
 
 # 40 features
 def prepare_x(data):
-    df1 = data[:40, :].T  # (203800, 40)
+    df1 = data[:40, :].T
     #print('df1 shape: {}'.format(df1.shape))
     return np.array(df1)
 
 # 5 horizon k
 def get_label(data):
-    lob = data[-5:, :].T  # (203800, 5)
+    lob = data[-5:, :].T
     #print('lob shape: {}'.format(lob.shape))
     return lob
 
 def data_classification(X, Y, T):
-    [N, D] = X.shape     # (203800, 40)
+    [N, D] = X.shape     
     #print('N, D = {}'.format(X.shape))
-    df = np.array(X)     # (203800, 40)
+    df = np.array(X)     
     #print('df: {}'.format(df.shape))
 
-    dY = np.array(Y)     # (203800, 5)
+    dY = np.array(Y)     
     #print('dY: {}'.format(dY.shape))
 
-    dataY = dY[T - 1:N]  # (203701, 5)
+    dataY = dY[T - 1:N]  
     #print('dataY shape: {}'.format(dataY.shape))
 
-    dataX = np.zeros((N - T + 1, T, D))  # (203701, 100, 40)
+    dataX = np.zeros((N - T + 1, T, D))  
     #print('dataX shape: {}'.format(dataX.shape))
     for i in range(T, N + 1):
         dataX[i - T] = df[i - T:i, :]
@@ -75,7 +70,6 @@ def torch_data(x, y):
     return x, y
 
 
-# In[5]:
 
 
 class Dataset(data.Dataset):
@@ -90,14 +84,14 @@ class Dataset(data.Dataset):
         y = get_label(data)
         x, y = data_classification(x, y, self.T)
         y = y[:,self.k] - 1
-        self.length = len(x)  # 203701
+        self.length = len(x)
         #print('len(x): {}'.format(self.length))
 
-        x = torch.from_numpy(x)         # torch.Size([203701, 100, 40])
+        x = torch.from_numpy(x)         
         #print('x before unsqueeze: {}'.format(x.shape))
-        self.x = torch.unsqueeze(x, 1)  # torch.Size([203701, 1, 100, 40])
+        self.x = torch.unsqueeze(x, 1)  
         #print('x after unsqueeze: {}'.format(self.x.shape))
-        self.y = torch.from_numpy(y)    # torch.Size([203701])
+        self.y = torch.from_numpy(y)    
         #print('y: {}'.format(self.y.shape))
 
     def __len__(self):
@@ -109,7 +103,7 @@ class Dataset(data.Dataset):
         return self.x[index], self.y[index]
 
 
-# In[6]:
+
 
 
 ''' 
@@ -130,8 +124,6 @@ dec_test = np.hstack((dec_test1, dec_test2, dec_test3))
 print(dec_train.shape, dec_val.shape, dec_test.shape)
 
 
-# In[7]:
-
 
 batch_size = 32
 
@@ -149,8 +141,6 @@ test_loader = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=1, sh
 
 ## ResNeXt block
 
-# In[9]:
-
 
 class ResNeXt_Block(nn.Module):
     def __init__(self, in_chnls, out_chnls, kernel_size, cardinality, stride):
@@ -158,20 +148,17 @@ class ResNeXt_Block(nn.Module):
         self.group_chnls = out_chnls//2
         
         self.conv1 = nn.Sequential(
-#             nn.BatchNorm2d(in_chnls),
             nn.InstanceNorm2d(in_chnls),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Conv2d(in_channels=in_chnls, out_channels=self.group_chnls, kernel_size=(1,1), stride=(1,1)),
         )
         self.groupconv = nn.Sequential(
-#             nn.BatchNorm2d(self.group_chnls),
             nn.InstanceNorm2d(self.group_chnls),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Conv2d(in_channels=self.group_chnls, out_channels=self.group_chnls, kernel_size=kernel_size,
                       stride=stride, groups=cardinality),
         )
         self.conv3 = nn.Sequential(
-#             nn.BatchNorm2d(self.group_chnls),
             nn.InstanceNorm2d(self.group_chnls),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Conv2d(in_channels=self.group_chnls, out_channels=out_chnls, kernel_size=(1,1), stride=(1,1)),
@@ -186,20 +173,16 @@ class ResNeXt_Block(nn.Module):
 
 ## MobileNet
 
-# In[10]:
-
 
 class MobileNet_block(nn.Module):
     def __init__(self, channel):
         super(MobileNet_block, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=(3,3), padding=(1,1), groups=channel),
-#             nn.BatchNorm2d(channel),
             nn.InstanceNorm2d(channel),
             nn.LeakyReLU(negative_slope=0.01),
             
             nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=(1,1), stride=(1,1)),
-#             nn.BatchNorm2d(channel),
             nn.InstanceNorm2d(channel),
         )
     
@@ -212,12 +195,10 @@ class MobileNet_block2(nn.Module):
         super(MobileNet_block2, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=(3,1), padding=(1,0), groups=channel),
-#             nn.BatchNorm2d(channel),
             nn.InstanceNorm2d(channel),
             nn.LeakyReLU(negative_slope=0.01),
             
             nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=(1,1), stride=(1,1)),
-#             nn.BatchNorm2d(channel),
             nn.InstanceNorm2d(channel),
         )
     
@@ -227,8 +208,6 @@ class MobileNet_block2(nn.Module):
 
 
 ## SENet
-
-# In[11]:
 
 
 class SELayer_tanh(nn.Module):
@@ -252,7 +231,6 @@ class SELayer_tanh(nn.Module):
 
 # # TCN temporal block
 
-# In[13]:
 
 
 class Chomp1d(nn.Module):
@@ -319,7 +297,6 @@ class TemporalConvNet(nn.Module):
 
 # # main block
 
-# In[14]:
 
 
 class deeplob(nn.Module):
@@ -333,7 +310,6 @@ class deeplob(nn.Module):
         self.se_1 = SELayer_tanh(channel=32)
         
         self._downsample_1 = nn.Sequential(nn.Conv2d(1, 32, kernel_size=1, stride=(1,2), bias=False)
-#                                            , nn.BatchNorm2d(32))
                                            , nn.InstanceNorm2d(32))
         
         
@@ -342,7 +318,6 @@ class deeplob(nn.Module):
         self.MobileNet4 = MobileNet_block(channel=32)
         
         self._downsample_2 = nn.Sequential(nn.Conv2d(32, 32, kernel_size=1, stride=(1,2), bias=False)
-#                                            , nn.BatchNorm2d(32))
                                            , nn.InstanceNorm2d(32))
         
         
@@ -351,7 +326,6 @@ class deeplob(nn.Module):
         self.MobileNet6 = MobileNet_block2(channel=32)
         
         self._downsample_3 = nn.Sequential(nn.Conv2d(32, 32, kernel_size=1, stride=(1,10), bias=False)
-#                                            , nn.BatchNorm2d(32))
                                            , nn.InstanceNorm2d(32))
         
         
@@ -401,20 +375,17 @@ class deeplob(nn.Module):
         return out
 
 
-# In[15]:
 
 
 model = deeplob()
 model.to(device)
 
 
-# In[16]:
 
 
 summary(model, (1, 1, 10, 40))
 
 
-# In[17]:
 
 
 criterion = nn.CrossEntropyLoss()
@@ -422,7 +393,6 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.007)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=8)
 
 
-# In[18]:
 
 
 # A function to encapsulate the training loop
@@ -436,7 +406,7 @@ def batch_gd(model, criterion, optimizer, train_loader, test_loader, epochs):
     patience = 100
     training_time = 0
 
-    for it in tqdm(range(epochs)):  # 進度條
+    for it in tqdm(range(epochs)):
         
         model.train()
         training_time += 1
@@ -497,14 +467,11 @@ def batch_gd(model, criterion, optimizer, train_loader, test_loader, epochs):
     return train_losses, test_losses
 
 
-# In[19]:
-
 
 train_losses, val_losses = batch_gd(model, criterion, optimizer, 
                                     train_loader, val_loader, epochs=72)
 
 
-# In[20]:
 
 
 plt.figure(figsize=(15,6))
