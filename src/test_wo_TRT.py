@@ -128,9 +128,6 @@ test_loader = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=1, sh
 
 
 ## ResNeXt block
-
-
-
 class ResNeXt_Block(nn.Module):
     def __init__(self, in_chnls, out_chnls, kernel_size, cardinality, stride):
         super(ResNeXt_Block, self).__init__()
@@ -161,9 +158,6 @@ class ResNeXt_Block(nn.Module):
 
 
 ## MobileNet
-
-
-
 class MobileNet_block(nn.Module):
     def __init__(self, channel):
         super(MobileNet_block, self).__init__()
@@ -198,8 +192,6 @@ class MobileNet_block2(nn.Module):
 
 
 ## SENet
-
-
 class SELayer_tanh(nn.Module):
     def __init__(self, channel, reduction=32):
         super(SELayer_tanh, self).__init__()
@@ -220,8 +212,6 @@ class SELayer_tanh(nn.Module):
 
 
 ## TCN temporal block
-
-
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
@@ -285,9 +275,6 @@ class TemporalConvNet(nn.Module):
 
 
 ## main block
-
-
-
 class deeplob(nn.Module):
     def __init__(self, num_classes=3):
         super(deeplob, self).__init__()
