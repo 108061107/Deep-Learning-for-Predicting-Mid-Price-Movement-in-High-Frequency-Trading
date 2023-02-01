@@ -33,29 +33,22 @@ print(device)
 # 40 features
 def prepare_x(data):
     df1 = data[:40, :].T
-    #print('df1 shape: {}'.format(df1.shape))
     return np.array(df1)
 
 # 5 horizon k
 def get_label(data):
     lob = data[-5:, :].T
-    #print('lob shape: {}'.format(lob.shape))
     return lob
 
 def data_classification(X, Y, T):
     [N, D] = X.shape     
-    #print('N, D = {}'.format(X.shape))
     df = np.array(X)     
-    #print('df: {}'.format(df.shape))
 
     dY = np.array(Y)     
-    #print('dY: {}'.format(dY.shape))
 
     dataY = dY[T - 1:N]  
-    #print('dataY shape: {}'.format(dataY.shape))
 
     dataX = np.zeros((N - T + 1, T, D))  
-    #print('dataX shape: {}'.format(dataX.shape))
     for i in range(T, N + 1):
         dataX[i - T] = df[i - T:i, :]
 
@@ -85,14 +78,10 @@ class Dataset(data.Dataset):
         x, y = data_classification(x, y, self.T)
         y = y[:,self.k] - 1
         self.length = len(x)
-        #print('len(x): {}'.format(self.length))
 
         x = torch.from_numpy(x)         
-        #print('x before unsqueeze: {}'.format(x.shape))
         self.x = torch.unsqueeze(x, 1)  
-        #print('x after unsqueeze: {}'.format(self.x.shape))
         self.y = torch.from_numpy(y)    
-        #print('y: {}'.format(self.y.shape))
 
     def __len__(self):
         """Denotes the total number of samples"""
