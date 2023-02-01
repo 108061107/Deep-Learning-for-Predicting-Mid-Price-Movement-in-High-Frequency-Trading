@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[25]:
 
 
 # load packages
@@ -25,42 +24,31 @@ from torch.nn.utils import weight_norm
 from torch2trt import torch2trt
 
 
-# In[3]:
-
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
 
-# In[4]:
-
 
 # 40 features
 def prepare_x(data):
-    df1 = data[:40, :].T  # (203800, 40)
-    #print('df1 shape: {}'.format(df1.shape))
+    df1 = data[:40, :].T  
     return np.array(df1)
 
 # 5 horizon k
 def get_label(data):
-    lob = data[-5:, :].T  # (203800, 5)
-    #print('lob shape: {}'.format(lob.shape))
+    lob = data[-5:, :].T  
     return lob
 
 def data_classification(X, Y, T):
-    [N, D] = X.shape     # (203800, 40)
-    #print('N, D = {}'.format(X.shape))
-    df = np.array(X)     # (203800, 40)
-    #print('df: {}'.format(df.shape))
+    [N, D] = X.shape     
+    df = np.array(X)     
 
-    dY = np.array(Y)     # (203800, 5)
-    #print('dY: {}'.format(dY.shape))
+    dY = np.array(Y)     
 
-    dataY = dY[T - 1:N]  # (203701, 5)
-    #print('dataY shape: {}'.format(dataY.shape))
+    dataY = dY[T - 1:N] 
 
-    dataX = np.zeros((N - T + 1, T, D))  # (203701, 100, 40)
-    #print('dataX shape: {}'.format(dataX.shape))
+    dataX = np.zeros((N - T + 1, T, D))  
     for i in range(T, N + 1):
         dataX[i - T] = df[i - T:i, :]
 
@@ -74,8 +62,6 @@ def torch_data(x, y):
     y = F.one_hot(y, num_classes=3)
     return x, y
 
-
-# In[5]:
 
 
 class Dataset(data.Dataset):
@@ -91,14 +77,10 @@ class Dataset(data.Dataset):
         x, y = data_classification(x, y, self.T)
         y = y[:,self.k] - 1
         self.length = len(x)  # 203701
-        #print('len(x): {}'.format(self.length))
 
-        x = torch.from_numpy(x)         # torch.Size([203701, 100, 40])
-        #print('x before unsqueeze: {}'.format(x.shape))
-        self.x = torch.unsqueeze(x, 1)  # torch.Size([203701, 1, 100, 40])
-        #print('x after unsqueeze: {}'.format(self.x.shape))
-        self.y = torch.from_numpy(y)    # torch.Size([203701])
-        #print('y: {}'.format(self.y.shape))
+        x = torch.from_numpy(x)        
+        self.x = torch.unsqueeze(x, 1)  
+        self.y = torch.from_numpy(y)    
 
     def __len__(self):
         """Denotes the total number of samples"""
@@ -109,7 +91,6 @@ class Dataset(data.Dataset):
         return self.x[index], self.y[index]
 
 
-# In[6]:
 
 
 # please change the data_path to your local path
@@ -129,7 +110,6 @@ dec_test = np.hstack((dec_test1, dec_test2, dec_test3))
 print(dec_train.shape, dec_val.shape, dec_test.shape)
 
 
-# In[7]:
 
 
 batch_size = 32
@@ -145,22 +125,10 @@ val_loader = torch.utils.data.DataLoader(dataset=dataset_val, batch_size=batch_s
 test_loader = torch.utils.data.DataLoader(dataset=dataset_test, batch_size=1, shuffle=False)
 
 
-# In[8]:
 
 
-'''
-tmp_loader = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=1, shuffle=True)
-for x, y in tmp_loader:
-    print(x)
-    print(y)
-    print(x.shape, y.shape)
-    break
-'''
+## ResNeXt block
 
-
-# # ResNeXt block
-
-# In[9]:
 
 
 class ResNeXt_Block(nn.Module):
@@ -169,20 +137,17 @@ class ResNeXt_Block(nn.Module):
         self.group_chnls = out_chnls//2
         
         self.conv1 = nn.Sequential(
-#             nn.BatchNorm2d(in_chnls),
             nn.InstanceNorm2d(in_chnls),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Conv2d(in_channels=in_chnls, out_channels=self.group_chnls, kernel_size=(1,1), stride=(1,1)),
         )
         self.groupconv = nn.Sequential(
-#             nn.BatchNorm2d(self.group_chnls),
             nn.InstanceNorm2d(self.group_chnls),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Conv2d(in_channels=self.group_chnls, out_channels=self.group_chnls, kernel_size=kernel_size,
                       stride=stride, groups=cardinality),
         )
         self.conv3 = nn.Sequential(
-#             nn.BatchNorm2d(self.group_chnls),
             nn.InstanceNorm2d(self.group_chnls),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Conv2d(in_channels=self.group_chnls, out_channels=out_chnls, kernel_size=(1,1), stride=(1,1)),
@@ -195,9 +160,8 @@ class ResNeXt_Block(nn.Module):
         return x
 
 
-# # MobileNet
+## MobileNet
 
-# In[10]:
 
 
 class MobileNet_block(nn.Module):
@@ -205,12 +169,10 @@ class MobileNet_block(nn.Module):
         super(MobileNet_block, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=(3,3), padding=(1,1), groups=channel),
-#             nn.BatchNorm2d(channel),
             nn.InstanceNorm2d(channel),
             nn.LeakyReLU(negative_slope=0.01),
             
             nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=(1,1), stride=(1,1)),
-#             nn.BatchNorm2d(channel),
             nn.InstanceNorm2d(channel),
         )
     
@@ -223,12 +185,10 @@ class MobileNet_block2(nn.Module):
         super(MobileNet_block2, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=(3,1), padding=(1,0), groups=channel),
-#             nn.BatchNorm2d(channel),
             nn.InstanceNorm2d(channel),
             nn.LeakyReLU(negative_slope=0.01),
             
             nn.Conv2d(in_channels=channel, out_channels=channel, kernel_size=(1,1), stride=(1,1)),
-#             nn.BatchNorm2d(channel),
             nn.InstanceNorm2d(channel),
         )
     
@@ -237,9 +197,7 @@ class MobileNet_block2(nn.Module):
         return x
 
 
-# # SENet
-
-# In[11]:
+## SENet
 
 
 class SELayer_tanh(nn.Module):
@@ -261,9 +219,7 @@ class SELayer_tanh(nn.Module):
         return x * y
 
 
-# # TCN temporal block
-
-# In[13]:
+## TCN temporal block
 
 
 class Chomp1d(nn.Module):
@@ -328,9 +284,8 @@ class TemporalConvNet(nn.Module):
         return self.network(x)
 
 
-# # main block
+## main block
 
-# In[14]:
 
 
 class deeplob(nn.Module):
@@ -344,7 +299,6 @@ class deeplob(nn.Module):
         self.se_1 = SELayer_tanh(channel=32)
         
         self._downsample_1 = nn.Sequential(nn.Conv2d(1, 32, kernel_size=1, stride=(1,2), bias=False)
-#                                            , nn.BatchNorm2d(32))
                                            , nn.InstanceNorm2d(32))
         
         
@@ -353,7 +307,6 @@ class deeplob(nn.Module):
         self.MobileNet4 = MobileNet_block(channel=32)
         
         self._downsample_2 = nn.Sequential(nn.Conv2d(32, 32, kernel_size=1, stride=(1,2), bias=False)
-#                                            , nn.BatchNorm2d(32))
                                            , nn.InstanceNorm2d(32))
         
         
@@ -362,7 +315,6 @@ class deeplob(nn.Module):
         self.MobileNet6 = MobileNet_block2(channel=32)
         
         self._downsample_3 = nn.Sequential(nn.Conv2d(32, 32, kernel_size=1, stride=(1,10), bias=False)
-#                                            , nn.BatchNorm2d(32))
                                            , nn.InstanceNorm2d(32))
         
         
@@ -370,7 +322,6 @@ class deeplob(nn.Module):
         
         self.tcn = TemporalConvNet(num_inputs=32, num_channels=[32, 32], kernel_size=4, dropout=0.2)
         
-        # fully connected
         self.fc1 = nn.Linear(32, num_classes)
 
     
@@ -412,21 +363,15 @@ class deeplob(nn.Module):
         return out
 
 
-# In[15]:
-
 
 model = deeplob()
 model.to(device)
 
 
-# In[16]:
-
 
 summary(model, (1, 1, 10, 40))
 
 
-
-# In[21]:
 
 model = torch.load('best_val_model_pytorch')
 
@@ -438,7 +383,6 @@ for inputs, targets in test_loader:
     inputs, targets = inputs.to(device, dtype=torch.float), targets.to(device, dtype=torch.int64)
 
     # Forward pass
-    #outputs = model(inputs)
     outputs = model(inputs)
     
     # Get prediction
@@ -452,8 +396,6 @@ all_targets = np.concatenate(all_targets)    # concatenate each batch
 all_predictions = np.concatenate(all_predictions)   # concatenate each batch
 
 
-# In[23]:
-
 
 print(f"Accuracy_score: {accuracy_score(all_targets, all_predictions):.4f}")  # return the fraction of correctly classified samples
 print(f"Precision: {precision_score(all_targets, all_predictions, average='weighted'):.4f}")
@@ -462,7 +404,6 @@ print(f"F1 score: {f1_score(all_targets, all_predictions, average='weighted'):.4
 print(classification_report(all_targets, all_predictions, digits=4))    # Text summary of the precision, recall, F1 score for each class
 
 
-# In[24]:
 
 
 
