@@ -405,7 +405,6 @@ for inputs, targets in tmp_loader:
     inputs, targets = inputs.to(device, dtype=torch.float), targets.to(device, dtype=torch.int64)
 
     # Forward pass
-    #outputs = model(inputs)
     outputs = model(inputs)
 
     # Get prediction
